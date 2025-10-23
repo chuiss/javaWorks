@@ -1,0 +1,61 @@
+
+package com.synex.HomeWork;
+
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
+public class OrderedThreads {
+   private static final Lock lock = new ReentrantLock();
+   private static final Condition cond;
+   private static int turn;
+   private static int counter;
+
+   static {
+      cond = lock.newCondition();
+      turn = 1;
+      counter = 1;
+   }
+
+   public OrderedThreads() {
+   }
+
+   public static void main(String[] args) {
+      Thread t1 = new Thread(() -> {
+         printNumbers(1);
+      });
+      Thread t2 = new Thread(() -> {
+         printNumbers(2);
+      });
+      Thread t3 = new Thread(() -> {
+         printNumbers(3);
+      });
+      t1.start();
+      t2.start();
+      t3.start();
+   }
+
+   private static void printNumbers(int threadId) {
+      while(counter <= 10) {
+         lock.lock();
+
+         try {
+            while(turn != threadId && counter <= 10) {
+               cond.await();
+            }
+
+            if (counter <= 10) {
+               System.out.println("Thread " + threadId + ": " + counter);
+               ++counter;
+               turn = turn % 3 + 1;
+               cond.signalAll();
+            }
+         } catch (InterruptedException var5) {
+            Thread.currentThread().interrupt();
+         } finally {
+            lock.unlock();
+         }
+      }
+
+   }
+}
